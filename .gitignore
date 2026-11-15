@@ -1,0 +1,30 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+.aws/
+
+# Go build and test output
+/bin/
+/build/
+/dist/
+*.exe
+*.test
+*.prof
+coverage.out
+coverage.html
+
+# Local caches, logs, and temporary files
+/.cache/
+/tmp/
+*.log
+*.tmp
+
+# Editor and operating system files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+._*
