@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: payments-postgres
+    # pg_stat_statements keeps statistics on every query: how often it ran,
+    # and how long it took. It has to be loaded when Postgres starts.
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements"]
+    environment:
+      POSTGRES_USER: payments
+      POSTGRES_PASSWORD: payments
+      POSTGRES_DB: payments
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./deploy/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # Over TCP: while its init scripts run, Postgres only listens on its
+      # socket, so a check through the socket says ready too early.
+      test: ["CMD-SHELL", "pg_isready -U payments -h 127.0.0.1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    container_name: payments-redis
+    ports:
+      - "6379:6379"
+
+  nats:
+    image: nats:2.11-alpine
+    container_name: payments-nats
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    # Busybox's wget is in the image: healthy once JetStream is up.
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8222/healthz?js-enabled-only=true"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Catches every email we send, in development. Its inbox: localhost:8025.
+  mailpit:
+    image: axllent/mailpit:v1.27
+    container_name: payments-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+
+volumes:
+  pgdata:
